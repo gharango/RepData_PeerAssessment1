@@ -1,25 +1,139 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Activity Monitoring"
+author: "G Arango"
+date: "Saturday, June 13, 2015"
+output: html_document
 ---
-
 
 ## Loading and preprocessing the data
 
+### Load the data
 
+```{r load, warning=FALSE, message=FALSE}
+setAs("character","myDate", function(from) as.Date(from, format="%Y-%m-%d") )
+activity=read.csv(unz("activity.zip", "activity.csv"), header=TRUE, colClasses=c("numeric","myDate","numeric"))
+```
 
 ## What is mean total number of steps taken per day?
 
+*missing values in activity dataset are ignored*
 
+### Calculate the total number of steps taken per day
+
+```{r sumday,warning=FALSE}
+sumSteps = aggregate(activity$steps, list(date=activity$date), FUN=sum)
+summary(sumSteps)
+```
+
+### Histogram of the total number of steps taken each day
+
+```{r histo_total_steps_day_NA,warning=FALSE}
+library("ggplot2")
+g = ggplot(activity, aes(x=date,y=steps))
+g + geom_histogram(stat="identity")+ylab("steps")
+```
+
+
+```{r sum_mean_median}
+sumMean=mean(sumSteps$x,na.rm=TRUE)
+sumMedian=median(sumSteps$x,na.rm=TRUE)
+```
+
+### The mean and median of the total number of steps taken per day 
+
+The mean of the total number of steps taken per day is **`r sprintf("%.2f",sumMean)`**
+and the median of the total number of steps taken per day **`r sprintf("%.2f",sumMedian)`**
 
 ## What is the average daily activity pattern?
 
+### Time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r mean_steps, warning=FALSE}
+meanSteps = aggregate(activity$steps, list(date=activity$date), FUN=mean)
+ggplot( data = meanSteps, aes( date, x )) + geom_line() +ylab("steps")
+```    
+    
+```{r max_mean_interval, warning=FALSE}
+maxMeans=meanSteps[which.max(meanSteps[,2]),1]
+```   
+
+### Date having the maximum number of steps
+
+The date **`r maxMeans`** has the 5-minute interval, on average across all the days containing the maximum number of steps
 
 
 ## Imputing missing values
 
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+### Total missing values
+
+```{r totalmissing}
+totalMissing=sum(!complete.cases(activity$steps))
+```
+The total number of missing values in the dataset (i.e. the total number of rows with NAs) is **`r totalMissing`**
+
+### Filling missing values
+
+*The strategy for filling in all of the missing values is to fill all the missing values with the mean for that 5-minute interval*
+
+Creation a new dataset that is equal to the original dataset but with the missing data filled in.
+
+```{r activity_no_na}
+meanAll = mean(meanSteps$x,na.rm=TRUE)
+meanSteps$x = mapply(function(x) ifelse(is.na(x), meanAll, x),meanSteps$x)
+activity1=merge(activity,meanSteps,by="date")
+activity1=dplyr::mutate(activity1,steps=ifelse(is.na(steps), x, steps))
+activity1=activity1[,!(names(activity1) %in% c("x"))]
+```
+
+### Histogram of the total number of steps taken each day
+
+```{r histo_total_steps_day ,warning=FALSE}
+meanSteps1 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
+ggplot(activity1, aes(x=date,y=steps))+ geom_histogram(stat="identity")+ylab("steps")
+```   
+    
+### Calculation and report of the mean and median total number of steps taken per day. 
+    
+```{r sum_mean1_median1}
+sumSteps1 = aggregate(activity1$steps, list(date=activity1$date), FUN=sum)
+sumMean1=mean(sumSteps1$x)
+sumMedian1=median(sumSteps1$x)
+```
+
+Mean of the total number of steps taken per day : **`r sprintf("%.2f",sumMean1)`**
+
+Median of the total number of steps taken per day : **`r sprintf("%.2f",sumMedian1)`**
+
+
+Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+Median with filled null values equals **`r sprintf("%.2f",sumMedian1)`** and Median ignoring null values equals **`r sprintf("%.2f",sumMedian)`**
+
+Mean with filled null values equals **`r sprintf("%.2f",sumMean1)`** and Mean ignoring null values equals **`r sprintf("%.2f",sumMean)`**
+
+
+As expected there is no difference with the mean as null values where replaced with mean values, median values have changed, when null values are filled with mean values the median equals the mean.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+*We use the dataset with the filled-in missing values*
+
+### Creation of a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r factor, message=FALSE}
+library("dplyr")
+activity1=dplyr::mutate(activity1,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
+meanSteps2 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
+meanSteps2=dplyr::mutate(meanSteps2,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
+
+```
+
+### Panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+```{r factor_plot}
+g = ggplot(meanSteps2, aes(date,x,group=daytype))+facet_grid(daytype ~ .)+ylab("steps")
+g + geom_line()  + theme_bw(base_size = 10) 
+```
