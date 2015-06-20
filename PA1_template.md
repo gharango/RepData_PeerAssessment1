@@ -47,7 +47,7 @@ g = ggplot(activity, aes(x=date,y=steps))
 g + geom_histogram(stat="identity")+ylab("steps")
 ```
 
-![plot of chunk histo_total_steps_day_NA](figure/histo_total_steps_day_NA-1.png) 
+![plot of chunk histo_total_steps_day_NA](Figure/histo_total_steps_day_NA-1.png) 
 
 
 
@@ -71,7 +71,7 @@ meanSteps = aggregate(activity$steps, list(date=activity$date), FUN=mean)
 ggplot( data = meanSteps, aes( date, x )) + geom_line() +ylab("steps")
 ```
 
-![plot of chunk mean_steps](figure/mean_steps-1.png) 
+![plot of chunk mean_steps](Figure/mean_steps-1.png) 
     
 
 ```r
@@ -118,7 +118,7 @@ meanSteps1 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
 ggplot(activity1, aes(x=date,y=steps))+ geom_histogram(stat="identity")+ylab("steps")
 ```
 
-![plot of chunk histo_total_steps_day ](figure/histo_total_steps_day -1.png) 
+![plot of chunk histo_total_steps_day ](Figure/histo_total_steps_day -1.png) 
     
 ### Calculation and report of the mean and median total number of steps taken per day. 
     
@@ -166,4 +166,4 @@ g = ggplot(meanSteps2, aes(date,x,group=daytype))+facet_grid(daytype ~ .)+ylab("
 g + geom_line()  + theme_bw(base_size = 10) 
 ```
 
-![plot of chunk factor_plot](figure/factor_plot-1.png) 
+![plot of chunk factor_plot](Figure/factor_plot-1.png) 
