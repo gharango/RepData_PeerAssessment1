@@ -13,6 +13,7 @@ output: html_document
 ```r
 setAs("character","myDate", function(from) as.Date(from, format="%Y-%m-%d") )
 activity=read.csv(unz("activity.zip", "activity.csv"), header=TRUE, colClasses=c("numeric","myDate","numeric"))
+activityWithoutNA=na.omit(activity)
 ```
 
 ## What is mean total number of steps taken per day?
@@ -47,7 +48,7 @@ g = ggplot(activity, aes(x=date,y=steps))
 g + geom_histogram(stat="identity")+ylab("steps")
 ```
 
-![plot of chunk histo_total_steps_day_NA](Figure/histo_total_steps_day_NA-1.png) 
+![plot of chunk histo_total_steps_day_NA](figure/histo_total_steps_day_NA-1.png) 
 
 
 
@@ -67,20 +68,20 @@ and the median of the total number of steps taken per day **10765.00**
 
 
 ```r
-meanSteps = aggregate(activity$steps, list(date=activity$date), FUN=mean)
-ggplot( data = meanSteps, aes( date, x )) + geom_line() +ylab("steps")
+meanSteps = aggregate(activityWithoutNA$steps, list(interval=activityWithoutNA$interval), FUN=mean)
+ggplot( data = meanSteps, aes( interval, x )) + geom_line() +ylab("steps")
 ```
 
-![plot of chunk mean_steps](Figure/mean_steps-1.png) 
+![plot of chunk mean_steps](figure/mean_steps-1.png) 
     
 
 ```r
 maxMeans=meanSteps[which.max(meanSteps[,2]),1]
 ```
 
-### Date having the maximum number of steps
+### the 5-minutes interval having the maximum number of steps
 
-The date **2012-11-23** has the 5-minute interval, on average across all the days containing the maximum number of steps
+**835** is the 5-minute interval containing the maximum number of steps
 
 
 ## Imputing missing values
@@ -105,7 +106,7 @@ Creation a new dataset that is equal to the original dataset but with the missin
 ```r
 meanAll = mean(meanSteps$x,na.rm=TRUE)
 meanSteps$x = mapply(function(x) ifelse(is.na(x), meanAll, x),meanSteps$x)
-activity1=merge(activity,meanSteps,by="date")
+activity1=merge(activity,meanSteps,by="interval")
 activity1=dplyr::mutate(activity1,steps=ifelse(is.na(steps), x, steps))
 activity1=activity1[,!(names(activity1) %in% c("x"))]
 ```
@@ -118,7 +119,7 @@ meanSteps1 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
 ggplot(activity1, aes(x=date,y=steps))+ geom_histogram(stat="identity")+ylab("steps")
 ```
 
-![plot of chunk histo_total_steps_day ](Figure/histo_total_steps_day -1.png) 
+![plot of chunk histo_total_steps_day ](figure/histo_total_steps_day -1.png) 
     
 ### Calculation and report of the mean and median total number of steps taken per day. 
     
@@ -154,16 +155,25 @@ As expected there is no difference with the mean as null values where replaced w
 ```r
 library("dplyr")
 activity1=dplyr::mutate(activity1,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
-meanSteps2 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
-meanSteps2=dplyr::mutate(meanSteps2,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
+meanSteps2WE = aggregate(steps~interval,data=subset(activity1,activity1$daytype=="weekend"), FUN=mean)
+meanSteps2WD = aggregate(steps~interval,data=subset(activity1,activity1$daytype=="weekday"), FUN=mean)
 ```
 
 ### Panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
 
 
 ```r
-g = ggplot(meanSteps2, aes(date,x,group=daytype))+facet_grid(daytype ~ .)+ylab("steps")
-g + geom_line()  + theme_bw(base_size = 10) 
+library("gridExtra")
 ```
 
-![plot of chunk factor_plot](Figure/factor_plot-1.png) 
+```
+## Loading required package: grid
+```
+
+```r
+gwe = ggplot( data = meanSteps2WE, aes( interval, steps )) + geom_line() +ylab("steps on weekdays")
+gwd = ggplot( data = meanSteps2WD, aes( interval, steps )) + geom_line() +ylab("steps on weekends")
+grid.arrange(gwd, gwe, ncol=2)
+```
+
+![plot of chunk factor_plot](figure/factor_plot-1.png) 

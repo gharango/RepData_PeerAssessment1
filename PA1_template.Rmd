@@ -12,6 +12,7 @@ output: html_document
 ```{r load, warning=FALSE, message=FALSE}
 setAs("character","myDate", function(from) as.Date(from, format="%Y-%m-%d") )
 activity=read.csv(unz("activity.zip", "activity.csv"), header=TRUE, colClasses=c("numeric","myDate","numeric"))
+activityWithoutNA=na.omit(activity)
 ```
 
 ## What is mean total number of steps taken per day?
@@ -49,17 +50,17 @@ and the median of the total number of steps taken per day **`r sprintf("%.2f",su
 ### Time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
 ```{r mean_steps, warning=FALSE}
-meanSteps = aggregate(activity$steps, list(date=activity$date), FUN=mean)
-ggplot( data = meanSteps, aes( date, x )) + geom_line() +ylab("steps")
+meanSteps = aggregate(activityWithoutNA$steps, list(interval=activityWithoutNA$interval), FUN=mean)
+ggplot( data = meanSteps, aes( interval, x )) + geom_line() +ylab("steps")
 ```    
     
 ```{r max_mean_interval, warning=FALSE}
 maxMeans=meanSteps[which.max(meanSteps[,2]),1]
 ```   
 
-### Date having the maximum number of steps
+### the 5-minutes interval having the maximum number of steps
 
-The date **`r maxMeans`** has the 5-minute interval, on average across all the days containing the maximum number of steps
+**`r maxMeans`** is the 5-minute interval containing the maximum number of steps
 
 
 ## Imputing missing values
@@ -82,7 +83,7 @@ Creation a new dataset that is equal to the original dataset but with the missin
 ```{r activity_no_na}
 meanAll = mean(meanSteps$x,na.rm=TRUE)
 meanSteps$x = mapply(function(x) ifelse(is.na(x), meanAll, x),meanSteps$x)
-activity1=merge(activity,meanSteps,by="date")
+activity1=merge(activity,meanSteps,by="interval")
 activity1=dplyr::mutate(activity1,steps=ifelse(is.na(steps), x, steps))
 activity1=activity1[,!(names(activity1) %in% c("x"))]
 ```
@@ -126,14 +127,17 @@ As expected there is no difference with the mean as null values where replaced w
 ```{r factor, message=FALSE}
 library("dplyr")
 activity1=dplyr::mutate(activity1,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
-meanSteps2 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
-meanSteps2=dplyr::mutate(meanSteps2,daytype=ifelse(weekdays(date)=="Sunday"|weekdays(date)=="Saturday", "weekend","weekday"))
+meanSteps2WE = aggregate(steps~interval,data=subset(activity1,activity1$daytype=="weekend"), FUN=mean)
+meanSteps2WD = aggregate(steps~interval,data=subset(activity1,activity1$daytype=="weekday"), FUN=mean)
 
 ```
 
 ### Panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
 
 ```{r factor_plot}
-g = ggplot(meanSteps2, aes(date,x,group=daytype))+facet_grid(daytype ~ .)+ylab("steps")
-g + geom_line()  + theme_bw(base_size = 10) 
+library("gridExtra")
+gwe = ggplot( data = meanSteps2WE, aes( interval, steps )) + geom_line() +ylab("steps on weekdays")
+gwd = ggplot( data = meanSteps2WD, aes( interval, steps )) + geom_line() +ylab("steps on weekends")
+grid.arrange(gwd, gwe, ncol=2)
+
 ```
