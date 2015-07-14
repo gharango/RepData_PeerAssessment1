@@ -1,7 +1,7 @@
 ---
 title: "Activity Monitoring"
 author: "G Arango"
-date: "Saturday, June 13, 2015"
+date: "Saturday, July 14, 2015"
 output: html_document
 ---
 
@@ -45,7 +45,8 @@ summary(sumSteps)
 ```r
 library("ggplot2")
 g = ggplot(activity, aes(x=date,y=steps))
-g + geom_histogram(stat="identity")+ylab("steps")
+g + geom_histogram(stat="identity",aes(fill="red"))+
+        guides(fill=FALSE)+ylab("steps")+theme_bw(base_size = 10) 
 ```
 
 ![plot of chunk histo_total_steps_day_NA](Figure/histo_total_steps_day_NA-1.png) 
@@ -64,24 +65,38 @@ and the median of the total number of steps taken per day **10765.00**
 
 ## What is the average daily activity pattern?
 
-### Time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+### Time series plot of the 5-minute interval and the average number of steps for all days
+
+*Time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)*
 
 
 ```r
 meanSteps = aggregate(activityWithoutNA$steps, list(interval=activityWithoutNA$interval), FUN=mean)
-ggplot( data = meanSteps, aes( interval, x )) + geom_line() +ylab("steps")
+ggplot( data = meanSteps, aes( interval, x )) + geom_line(colour="blue") +ylab("steps")+
+ theme_bw(base_size = 10)       
 ```
 
 ![plot of chunk mean_steps](Figure/mean_steps-1.png) 
-    
+
+## 5-minutes interval having the maximum number of steps
+
 
 ```r
-maxMeans=meanSteps[which.max(meanSteps[,2]),1]
+maxMeans=max(meanSteps[,2])
+maxMeans
 ```
 
-### the 5-minutes interval having the maximum number of steps
+```
+## [1] 206.1698
+```
 
-**835** is the 5-minute interval containing the maximum number of steps
+```r
+maxMeansInterval=meanSteps[which.max(meanSteps[,2]),1]
+```
+
+
+**835** is the 5-minute interval containing the maximum number 
+of steps.
 
 
 ## Imputing missing values
@@ -100,7 +115,7 @@ The total number of missing values in the dataset (i.e. the total number of rows
 
 *The strategy for filling in all of the missing values is to fill all the missing values with the mean for that 5-minute interval*
 
-Creation a new dataset that is equal to the original dataset but with the missing data filled in.
+**Creation a new dataset that is equal to the original dataset but with the missing data filled in.**
 
 
 ```r
@@ -116,7 +131,9 @@ activity1=activity1[,!(names(activity1) %in% c("x"))]
 
 ```r
 meanSteps1 = aggregate(activity1$steps, list(date=activity1$date), FUN=mean)
-ggplot(activity1, aes(x=date,y=steps))+ geom_histogram(stat="identity")+ylab("steps")
+g = ggplot(activity1, aes(x=date,y=steps))
+g + geom_histogram(stat="identity",aes(fill="red"))+ylab("steps")+
+                   guides(fill=FALSE)+theme_bw(base_size = 10)
 ```
 
 ![plot of chunk histo_total_steps_day ](Figure/histo_total_steps_day -1.png) 
@@ -149,7 +166,9 @@ As expected there is no difference with the mean as null values where replaced w
 
 *We use the dataset with the filled-in missing values*
 
-### Creation of a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+### New factor variable in the dataset with two levels - "weekday" and "weekend" 
+
+*Creation of a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.*
 
 
 ```r
@@ -159,7 +178,9 @@ meanSteps2WE = aggregate(steps~interval,data=subset(activity1,activity1$daytype=
 meanSteps2WD = aggregate(steps~interval,data=subset(activity1,activity1$daytype=="weekday"), FUN=mean)
 ```
 
-### Panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+### Time series plot of the 5-minute interval and the average number of steps  weekday days or weekend days
+
+*Panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis) *
 
 
 ```r
@@ -171,8 +192,12 @@ library("gridExtra")
 ```
 
 ```r
-gwe = ggplot( data = meanSteps2WE, aes( interval, steps )) + geom_line() +ylab("steps on weekdays")
-gwd = ggplot( data = meanSteps2WD, aes( interval, steps )) + geom_line() +ylab("steps on weekends")
+gwe = ggplot( data = meanSteps2WE, aes( interval, steps ))+
+        geom_line(colour="blue") +ylab("steps on weekdays")+
+        theme_bw(base_size = 10)
+gwd = ggplot( data = meanSteps2WD, aes( interval, steps ))+
+        geom_line(colour="blue") +ylab("steps on weekends")+
+        theme_bw(base_size = 10)
 grid.arrange(gwd, gwe, ncol=2)
 ```
 
